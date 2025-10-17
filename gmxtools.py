@@ -142,6 +142,51 @@ async def get_price_tickers(chain: str = "arbitrum") -> Dict[str, Any]:
                     "chain": chain,
                     "error": f"Failed to fetch price tickers (HTTP {response.status})"
                 }
+            
+@mcp.tool()
+async def get_price_candles(token_symbol: str = "ETH", period: str = "1d", chain: str = "arbitrum") -> dict:
+    """
+    Fetches historical candlestick (OHLC) data for a specific token and period.
+
+    Args:
+        token_symbol: Symbol of the token (e.g., ETH, BTC)
+        period: Time period for each candle (e.g., 1d, 1h)
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing period and a list of candles with timestamp, open, high, low, close prices
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/prices/candles?tokenSymbol={token_symbol}&period={period}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                candles = [
+                    {
+                        "timestamp": candle[0],
+                        "open": candle[1],
+                        "high": candle[2],
+                        "low": candle[3],
+                        "close": candle[4]
+                    }
+                    for candle in data.get("candles", [])
+                ]
+                return {
+                    "chain": chain,
+                    "token": token_symbol,
+                    "period": data.get("period", period),
+                    "candle_count": len(candles),
+                    "candles": candles
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "token": token_symbol,
+                    "error": f"Failed to fetch candles (HTTP {response.status})"
+                }
+
 
 
 def main():
