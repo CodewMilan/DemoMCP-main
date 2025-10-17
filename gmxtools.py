@@ -14,6 +14,37 @@ mcp = FastMCP("GMX Token & Prices Server")
 ARBITRUM_API = "https://arbitrum-api.gmxinfra.io"
 AVALANCHE_API = "https://avalanche-api.gmxinfra.io"
 
+
+@mcp.tool()
+async def ping_gmx(chain: str = "arbitrum") -> Dict[str, Any]:
+    """
+    Pings the GMX API to check if the server is online.
+
+    Args:
+        chain: The blockchain to ping (arbitrum or avalanche)
+
+    Returns:
+        Dictionary indicating whether the API is reachable and responsive
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/ping"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                return {
+                    "chain": chain,
+                    "status": "online" if data.get("message") == "ok" else "unexpected response",
+                    "raw_response": data
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "status": "offline",
+                    "error": f"Failed to ping GMX API (HTTP {response.status})"
+                }
+
 @mcp.tool()
 async def get_tokens(chain: str = "arbitrum") -> Dict[str, Any]:
     """
