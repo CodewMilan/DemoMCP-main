@@ -187,6 +187,44 @@ async def get_price_candles(token_symbol: str = "ETH", period: str = "1d", chain
                     "error": f"Failed to fetch candles (HTTP {response.status})"
                 }
 
+@mcp.tool()
+async def get_total_apy(chain: str = "arbitrum") -> dict:
+    """
+    Fetches total APY (annual percentage yield) for all GMX markets.
+
+    Args:
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing each market's APY, base APY, and bonus APR
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/apy?period=total"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                markets = [
+                    {
+                        "market_address": addr,
+                        "apy": info.get("apy"),
+                        "base_apy": info.get("baseApy"),
+                        "bonus_apr": info.get("bonusApr")
+                    }
+                    for addr, info in data.get("markets", {}).items()
+                ]
+                return {
+                    "chain": chain,
+                    "market_count": len(markets),
+                    "markets": markets
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch APY data (HTTP {response.status})"
+                }
+
 
 
 def main():
