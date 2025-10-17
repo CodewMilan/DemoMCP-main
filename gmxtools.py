@@ -105,6 +105,45 @@ async def get_signed_prices(chain: str = "arbitrum") -> Dict[str, Any]:
                 }
 
 
+@mcp.tool()
+async def get_price_tickers(chain: str = "arbitrum") -> Dict[str, Any]:
+    """
+    Fetches the latest token price tickers from GMX.
+
+    Args:
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing token price ticker information
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/prices/tickers"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                return {
+                    "chain": chain,
+                    "ticker_count": len(data),
+                    "tickers": [
+                        {
+                            "symbol": item.get("tokenSymbol"),
+                            "address": item.get("tokenAddress"),
+                            "min_price": item.get("minPrice"),
+                            "max_price": item.get("maxPrice"),
+                            "timestamp": item.get("timestamp"),
+                        }
+                        for item in data
+                    ]
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch price tickers (HTTP {response.status})"
+                }
+
+
 def main():
     """Main function to run the MCP server."""
     mcp.run()
