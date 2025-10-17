@@ -225,6 +225,44 @@ async def get_total_apy(chain: str = "arbitrum") -> dict:
                     "error": f"Failed to fetch APY data (HTTP {response.status})"
                 }
 
+@mcp.tool()
+async def get_annualized_performance(chain: str = "arbitrum") -> dict:
+    """
+    Fetches annualized performance data for GMX markets.
+
+    Args:
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing performance metrics for each market/entity
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/performance/annualized?period=total"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                performance_list = [
+                    {
+                        "address": item.get("address"),
+                        "entity": item.get("entity"),
+                        "long_token_performance": float(item.get("longTokenPerformance", 0)),
+                        "short_token_performance": float(item.get("shortTokenPerformance", 0)),
+                        "uniswap_v2_performance": float(item.get("uniswapV2Performance", 0))
+                    }
+                    for item in data
+                ]
+                return {
+                    "chain": chain,
+                    "market_count": len(performance_list),
+                    "performance": performance_list
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch annualized performance (HTTP {response.status})"
+                }
 
 
 def main():
