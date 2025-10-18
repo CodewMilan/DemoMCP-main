@@ -347,6 +347,60 @@ async def get_markets_info(chain: str = "arbitrum", address: str | None = None) 
             }
 
 
+@mcp.tool()
+async def get_glvs_info(chain: str = "arbitrum", address: str | None = None) -> dict:
+    """
+    Fetches all GMX GLV (liquidity vault) data from /glvs endpoint.
+
+    Args:
+        chain: "arbitrum" or "avalanche"
+        address: optional glvToken address to filter for a specific GLV
+
+    Returns:
+        dict containing chain, glv_count, and list of GLV entries
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/glvs"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch GLVs info (HTTP {response.status})"
+                }
+
+            data = await response.json()
+            raw_glvs = data.get("glvs", [])
+
+            parsed = []
+            for g in raw_glvs:
+                parsed.append({
+                    "name": g.get("name"),
+                    "glv_token": g.get("glvToken"),
+                    "long_token": g.get("longToken"),
+                    "short_token": g.get("shortToken"),
+                    "is_listed": bool(g.get("isListed")),
+                    "listing_date": g.get("listingDate"),
+                    "raw": g  # Keep raw for full reference
+                })
+
+            if address:
+                address_lower = address.lower()
+                filtered = [x for x in parsed if (x.get("glv_token") or "").lower() == address_lower]
+                return {
+                    "chain": chain,
+                    "glv_count": len(filtered),
+                    "glvs": filtered
+                }
+
+            return {
+                "chain": chain,
+                "glv_count": len(parsed),
+                "glvs": parsed
+            }
+
+
 def main():
     """Main function to run the MCP server."""
     mcp.run()
