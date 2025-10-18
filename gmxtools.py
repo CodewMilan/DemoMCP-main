@@ -400,6 +400,71 @@ async def get_glvs_info(chain: str = "arbitrum", address: str | None = None) -> 
                 "glvs": parsed
             }
 
+@mcp.tool()
+async def get_glvs_detailed_info(chain: str = "arbitrum", address: str | None = None) -> dict:
+    """
+    Fetches detailed GMX GLV (liquidity vault) information from /glvs/info endpoint.
+
+    Args:
+        chain: "arbitrum" or "avalanche"
+        address: optional GLV token address to filter for a specific GLV
+
+    Returns:
+        dict containing GLV count and detailed GLV data
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/glvs/info"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch GLV detailed info (HTTP {response.status})"
+                }
+
+            data = await response.json()
+            glvs_raw = data.get("glvs", [])
+
+            parsed = []
+            for g in glvs_raw:
+                markets = g.get("markets", [])
+                parsed.append({
+                    "name": g.get("name"),
+                    "glv_token": g.get("glvToken"),
+                    "long_token": g.get("longToken"),
+                    "short_token": g.get("shortToken"),
+                    "is_listed": bool(g.get("isListed")),
+                    "listing_date": g.get("listingDate"),
+                    "market_count": len(markets),
+                    "markets": [
+                        {
+                            "address": m.get("address"),
+                            "balance": m.get("balance"),
+                            "balance_usd": m.get("balanceUsd"),
+                            "share": m.get("share"),
+                            "is_disabled": bool(m.get("isDisabled")),
+                            "listing_date": m.get("listingDate"),
+                        }
+                        for m in markets
+                    ],
+                    "raw": g
+                })
+
+            if address:
+                address_lower = address.lower()
+                filtered = [x for x in parsed if (x.get("glv_token") or "").lower() == address_lower]
+                return {
+                    "chain": chain,
+                    "glv_count": len(filtered),
+                    "glvs": filtered
+                }
+
+            return {
+                "chain": chain,
+                "glv_count": len(parsed),
+                "glvs": parsed
+            }
 
 def main():
     """Main function to run the MCP server."""
