@@ -265,6 +265,88 @@ async def get_annualized_performance(chain: str = "arbitrum") -> dict:
                 }
 
 
+@mcp.tool()
+async def get_markets_info(chain: str = "arbitrum", address: str | None = None) -> dict:
+    """
+    Fetches detailed info for GMX markets (from /markets/info).
+    
+    Args:
+        chain: "arbitrum" or "avalanche"
+        address: optional marketToken address to filter for a single market/entity
+
+    Returns:
+        dict with chain, market_count, markets (list). If `address` provided and found,
+        markets will contain only that market.
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/markets/info"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch markets info (HTTP {response.status})"
+                }
+
+            data = await response.json()
+            raw_markets = data.get("markets", [])
+
+            def safe_int(x):
+                try:
+                    return int(x)
+                except Exception:
+                    return 0
+
+            def safe_float(x):
+                try:
+                    return float(x)
+                except Exception:
+                    return 0.0
+
+            parsed = []
+            for m in raw_markets:
+                parsed.append({
+                    "name": m.get("name"),
+                    "market_token": m.get("marketToken"),
+                    "index_token": m.get("indexToken"),
+                    "long_token": m.get("longToken"),
+                    "short_token": m.get("shortToken"),
+                    "is_listed": bool(m.get("isListed")),
+                    "listing_date": m.get("listingDate"),
+                    # numeric values (strings in API) parsed safely
+                    "open_interest_long": safe_int(m.get("openInterestLong")),
+                    "open_interest_short": safe_int(m.get("openInterestShort")),
+                    "available_liquidity_long": safe_int(m.get("availableLiquidityLong")),
+                    "available_liquidity_short": safe_int(m.get("availableLiquidityShort")),
+                    "pool_amount_long": safe_int(m.get("poolAmountLong")),
+                    "pool_amount_short": safe_int(m.get("poolAmountShort")),
+                    "funding_rate_long": safe_float(m.get("fundingRateLong")),
+                    "funding_rate_short": safe_float(m.get("fundingRateShort")),
+                    "borrowing_rate_long": safe_float(m.get("borrowingRateLong")),
+                    "borrowing_rate_short": safe_float(m.get("borrowingRateShort")),
+                    "net_rate_long": safe_float(m.get("netRateLong")),
+                    "net_rate_short": safe_float(m.get("netRateShort")),
+                    # keep raw object for any additional fields
+                    "raw": m
+                })
+
+            if address:
+                address_lower = address.lower()
+                filtered = [x for x in parsed if (x.get("market_token") or "").lower() == address_lower]
+                return {
+                    "chain": chain,
+                    "market_count": len(filtered),
+                    "markets": filtered
+                }
+
+            return {
+                "chain": chain,
+                "market_count": len(parsed),
+                "markets": parsed
+            }
+
+
 def main():
     """Main function to run the MCP server."""
     mcp.run()
