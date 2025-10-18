@@ -1,0 +1,60 @@
+# GMX v2 Contract Addresses
+arbitrum:
+  # Core contracts
+  datastore: "0xFD70de6b91282D8017aA4E741e9Ae325CAb992d8"
+  syntheticsreader: "0xf60becbba223EEA9495Da3f606753867eC10d139"
+  syntheticsrouter: "0x7C68C7866A64FA2160F78EEaE12217FFbf871fa8"
+  exchangerouter: "0x69C527fC77291722b52649E45c838e41be8Bf5d5"
+  ordervault: "0x31eF83a530Fde1B38EE9A18093A333D8Bbbc40D5"
+  depositvault: "0xF89e77e8Dc11691C9e8757e84aaFbCD8A67d7A55"
+  withdrawalvault: "0x0628D46b5D145f183AdB6Ef1f2c97eD1C4701C55"
+
+arbitrum_sepolia:
+  # Core contracts (testnet addresses - these may need verification)
+  datastore: "0x09635F643e140090A9A8Dcd712eD6285858ceBef"
+  syntheticsreader: "0xD49a0e9A4CD5979aE36840f542D2d7f02C4817Be"
+  syntheticsrouter: "0x159854e14A862Df9E39E1D128b8e5F70B4A3cE9B"
+  exchangerouter: "0x159854e14A862Df9E39E1D128b8e5F70B4A3cE9B"
+  ordervault: "0x31eF83a530Fde1B38EE9A18093A333D8Bbbc40D5"
+  depositvault: "0xF89e77e8Dc11691C9e8757e84aaFbCD8A67d7A55"
+  withdrawalvault: "0x0628D46b5D145f183AdB6Ef1f2c97eD1C4701C55"
+  
+  # Token addresses (Arbitrum Sepolia testnet)
+  tokens:
+    WETH: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"  # Sepolia WETH
+    USDC: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"  # Sepolia USDC
+    USDT: "0xb544F3E365472D896707dF7d6F3E82B26dAB8056"  # Sepolia USDT (placeholder)
+    ARB: "0x0000000000000000000000000000000000000000"  # ARB not available on testnet
+    BTC: "0x0000000000000000000000000000000000000000"  # BTC placeholder
+    SOL: "0x0000000000000000000000000000000000000000"  # SOL placeholder
+    
+  # Market addresses (testnet GM tokens - may not exist)
+  markets:
+    ETH_USD: "0x0000000000000000000000000000000000000000"  # Testnet market placeholder
+    BTC_USD: "0x0000000000000000000000000000000000000000"  # Testnet market placeholder
+    ARB_USD: "0x0000000000000000000000000000000000000000"  # Testnet market placeholder
+    SOL_USD: "0x0000000000000000000000000000000000000000"  # Testnet market placeholder
+
+avalanche:
+  # Core contracts  
+  datastore: "0x2F0b22339414ADeD7D5F06f9D604c7fF5b2fe3f6"
+  syntheticsreader: "0x5Ca84c34a381434786738735265b9f3FD814b824"
+  syntheticsrouter: "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE"
+  exchangerouter: "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE"
+  ordervault: "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE"
+  depositvault: "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE"
+  withdrawalvault: "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE"
+  
+  # Token addresses
+  tokens:
+    WAVAX: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
+    USDC: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"
+    USDT: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7"
+    BTC: "0x50b7545627a5162F82A992c33b87aDc75187B218"
+    ETH: "0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB"
+    
+  # Market addresses
+  markets:
+    AVAX_USD: "0x5aa653a076c1dbB47cec8C1B4d152444CAD91941"
+    BTC_USD: "0x47c031236e19d024b42f8AE6780E44A573170703"
+    ETH_USD: "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336"
