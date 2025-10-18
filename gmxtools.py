@@ -105,6 +105,367 @@ async def get_signed_prices(chain: str = "arbitrum") -> Dict[str, Any]:
                 }
 
 
+@mcp.tool()
+async def get_price_tickers(chain: str = "arbitrum") -> Dict[str, Any]:
+    """
+    Fetches the latest token price tickers from GMX.
+
+    Args:
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing token price ticker information
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/prices/tickers"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                return {
+                    "chain": chain,
+                    "ticker_count": len(data),
+                    "tickers": [
+                        {
+                            "symbol": item.get("tokenSymbol"),
+                            "address": item.get("tokenAddress"),
+                            "min_price": item.get("minPrice"),
+                            "max_price": item.get("maxPrice"),
+                            "timestamp": item.get("timestamp"),
+                        }
+                        for item in data
+                    ]
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch price tickers (HTTP {response.status})"
+                }
+            
+@mcp.tool()
+async def get_price_candles(token_symbol: str = "ETH", period: str = "1d", chain: str = "arbitrum") -> dict:
+    """
+    Fetches historical candlestick (OHLC) data for a specific token and period.
+
+    Args:
+        token_symbol: Symbol of the token (e.g., ETH, BTC)
+        period: Time period for each candle (e.g., 1d, 1h)
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing period and a list of candles with timestamp, open, high, low, close prices
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/prices/candles?tokenSymbol={token_symbol}&period={period}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                candles = [
+                    {
+                        "timestamp": candle[0],
+                        "open": candle[1],
+                        "high": candle[2],
+                        "low": candle[3],
+                        "close": candle[4]
+                    }
+                    for candle in data.get("candles", [])
+                ]
+                return {
+                    "chain": chain,
+                    "token": token_symbol,
+                    "period": data.get("period", period),
+                    "candle_count": len(candles),
+                    "candles": candles
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "token": token_symbol,
+                    "error": f"Failed to fetch candles (HTTP {response.status})"
+                }
+
+@mcp.tool()
+async def get_total_apy(chain: str = "arbitrum") -> dict:
+    """
+    Fetches total APY (annual percentage yield) for all GMX markets.
+
+    Args:
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing each market's APY, base APY, and bonus APR
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/apy?period=total"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                markets = [
+                    {
+                        "market_address": addr,
+                        "apy": info.get("apy"),
+                        "base_apy": info.get("baseApy"),
+                        "bonus_apr": info.get("bonusApr")
+                    }
+                    for addr, info in data.get("markets", {}).items()
+                ]
+                return {
+                    "chain": chain,
+                    "market_count": len(markets),
+                    "markets": markets
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch APY data (HTTP {response.status})"
+                }
+
+@mcp.tool()
+async def get_annualized_performance(chain: str = "arbitrum") -> dict:
+    """
+    Fetches annualized performance data for GMX markets.
+
+    Args:
+        chain: The blockchain to fetch from (arbitrum or avalanche)
+
+    Returns:
+        Dictionary containing performance metrics for each market/entity
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/performance/annualized?period=total"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                performance_list = [
+                    {
+                        "address": item.get("address"),
+                        "entity": item.get("entity"),
+                        "long_token_performance": float(item.get("longTokenPerformance", 0)),
+                        "short_token_performance": float(item.get("shortTokenPerformance", 0)),
+                        "uniswap_v2_performance": float(item.get("uniswapV2Performance", 0))
+                    }
+                    for item in data
+                ]
+                return {
+                    "chain": chain,
+                    "market_count": len(performance_list),
+                    "performance": performance_list
+                }
+            else:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch annualized performance (HTTP {response.status})"
+                }
+
+
+@mcp.tool()
+async def get_markets_info(chain: str = "arbitrum", address: str | None = None) -> dict:
+    """
+    Fetches detailed info for GMX markets (from /markets/info).
+    
+    Args:
+        chain: "arbitrum" or "avalanche"
+        address: optional marketToken address to filter for a single market/entity
+
+    Returns:
+        dict with chain, market_count, markets (list). If `address` provided and found,
+        markets will contain only that market.
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/markets/info"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch markets info (HTTP {response.status})"
+                }
+
+            data = await response.json()
+            raw_markets = data.get("markets", [])
+
+            def safe_int(x):
+                try:
+                    return int(x)
+                except Exception:
+                    return 0
+
+            def safe_float(x):
+                try:
+                    return float(x)
+                except Exception:
+                    return 0.0
+
+            parsed = []
+            for m in raw_markets:
+                parsed.append({
+                    "name": m.get("name"),
+                    "market_token": m.get("marketToken"),
+                    "index_token": m.get("indexToken"),
+                    "long_token": m.get("longToken"),
+                    "short_token": m.get("shortToken"),
+                    "is_listed": bool(m.get("isListed")),
+                    "listing_date": m.get("listingDate"),
+                    # numeric values (strings in API) parsed safely
+                    "open_interest_long": safe_int(m.get("openInterestLong")),
+                    "open_interest_short": safe_int(m.get("openInterestShort")),
+                    "available_liquidity_long": safe_int(m.get("availableLiquidityLong")),
+                    "available_liquidity_short": safe_int(m.get("availableLiquidityShort")),
+                    "pool_amount_long": safe_int(m.get("poolAmountLong")),
+                    "pool_amount_short": safe_int(m.get("poolAmountShort")),
+                    "funding_rate_long": safe_float(m.get("fundingRateLong")),
+                    "funding_rate_short": safe_float(m.get("fundingRateShort")),
+                    "borrowing_rate_long": safe_float(m.get("borrowingRateLong")),
+                    "borrowing_rate_short": safe_float(m.get("borrowingRateShort")),
+                    "net_rate_long": safe_float(m.get("netRateLong")),
+                    "net_rate_short": safe_float(m.get("netRateShort")),
+                    # keep raw object for any additional fields
+                    "raw": m
+                })
+
+            if address:
+                address_lower = address.lower()
+                filtered = [x for x in parsed if (x.get("market_token") or "").lower() == address_lower]
+                return {
+                    "chain": chain,
+                    "market_count": len(filtered),
+                    "markets": filtered
+                }
+
+            return {
+                "chain": chain,
+                "market_count": len(parsed),
+                "markets": parsed
+            }
+
+
+@mcp.tool()
+async def get_glvs_info(chain: str = "arbitrum", address: str | None = None) -> dict:
+    """
+    Fetches all GMX GLV (liquidity vault) data from /glvs endpoint.
+
+    Args:
+        chain: "arbitrum" or "avalanche"
+        address: optional glvToken address to filter for a specific GLV
+
+    Returns:
+        dict containing chain, glv_count, and list of GLV entries
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/glvs"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch GLVs info (HTTP {response.status})"
+                }
+
+            data = await response.json()
+            raw_glvs = data.get("glvs", [])
+
+            parsed = []
+            for g in raw_glvs:
+                parsed.append({
+                    "name": g.get("name"),
+                    "glv_token": g.get("glvToken"),
+                    "long_token": g.get("longToken"),
+                    "short_token": g.get("shortToken"),
+                    "is_listed": bool(g.get("isListed")),
+                    "listing_date": g.get("listingDate"),
+                    "raw": g  # Keep raw for full reference
+                })
+
+            if address:
+                address_lower = address.lower()
+                filtered = [x for x in parsed if (x.get("glv_token") or "").lower() == address_lower]
+                return {
+                    "chain": chain,
+                    "glv_count": len(filtered),
+                    "glvs": filtered
+                }
+
+            return {
+                "chain": chain,
+                "glv_count": len(parsed),
+                "glvs": parsed
+            }
+
+@mcp.tool()
+async def get_glvs_detailed_info(chain: str = "arbitrum", address: str | None = None) -> dict:
+    """
+    Fetches detailed GMX GLV (liquidity vault) information from /glvs/info endpoint.
+
+    Args:
+        chain: "arbitrum" or "avalanche"
+        address: optional GLV token address to filter for a specific GLV
+
+    Returns:
+        dict containing GLV count and detailed GLV data
+    """
+    base_url = ARBITRUM_API if chain.lower() == "arbitrum" else AVALANCHE_API
+    url = f"{base_url}/glvs/info"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {
+                    "chain": chain,
+                    "error": f"Failed to fetch GLV detailed info (HTTP {response.status})"
+                }
+
+            data = await response.json()
+            glvs_raw = data.get("glvs", [])
+
+            parsed = []
+            for g in glvs_raw:
+                markets = g.get("markets", [])
+                parsed.append({
+                    "name": g.get("name"),
+                    "glv_token": g.get("glvToken"),
+                    "long_token": g.get("longToken"),
+                    "short_token": g.get("shortToken"),
+                    "is_listed": bool(g.get("isListed")),
+                    "listing_date": g.get("listingDate"),
+                    "market_count": len(markets),
+                    "markets": [
+                        {
+                            "address": m.get("address"),
+                            "balance": m.get("balance"),
+                            "balance_usd": m.get("balanceUsd"),
+                            "share": m.get("share"),
+                            "is_disabled": bool(m.get("isDisabled")),
+                            "listing_date": m.get("listingDate"),
+                        }
+                        for m in markets
+                    ],
+                    "raw": g
+                })
+
+            if address:
+                address_lower = address.lower()
+                filtered = [x for x in parsed if (x.get("glv_token") or "").lower() == address_lower]
+                return {
+                    "chain": chain,
+                    "glv_count": len(filtered),
+                    "glvs": filtered
+                }
+
+            return {
+                "chain": chain,
+                "glv_count": len(parsed),
+                "glvs": parsed
+            }
+
 def main():
     """Main function to run the MCP server."""
     mcp.run()
