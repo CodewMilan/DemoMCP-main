@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "gmx-trading": {
+      "command": "python",
+      "args": ["src/gmx_server.py"],
+      "env": {
+        "PYTHONPATH": "."
+      }
+    }
+  }
+}

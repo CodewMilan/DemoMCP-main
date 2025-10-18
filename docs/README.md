@@ -6,7 +6,7 @@ A Model Context Protocol (MCP) server for GMX v2 trading operations with Claude 
 
 1. **Install dependencies:**
    ```bash
-   pip install -r requirements.txt
+   pip install fastmcp python-dotenv pyyaml
    ```
 
 2. **Configure environment:**
@@ -23,25 +23,6 @@ A Model Context Protocol (MCP) server for GMX v2 trading operations with Claude 
 4. **Add to Claude Desktop:**
    Copy `examples/claude_desktop_config.json` to your Claude Desktop MCP config.
 
-## Project Structure
-
-```
-├── src/                    # Source code
-│   ├── gmx_server.py      # Main MCP server
-│   └── gmx_server_simple.py  # Simplified version
-├── config/                 # Configuration
-│   └── env.example        # Environment template
-├── examples/               # Examples and utilities
-│   ├── claude_desktop_config.json
-│   ├── test_gmx_client.py
-│   └── setup_gmx.py
-├── docs/                   # Documentation
-│   ├── README.md
-│   ├── README_GMX.md
-│   └── SETUP_COMPLETE.md
-└── requirements.txt
-```
-
 ## Commands
 
 - `setup_wallet()` - Configure wallet
@@ -56,5 +37,18 @@ A Model Context Protocol (MCP) server for GMX v2 trading operations with Claude 
 - Private keys stored in `.env.local` (not committed to git)
 - All operations default to debug mode
 - Comprehensive risk analysis and warnings
+
+## Example Usage
+
+```python
+# Setup (uses .env.local)
+setup_wallet()
+
+# Get market info
+get_gmx_markets()
+
+# Plan a trade
+create_trading_plan("ETH", "long", 1000, 100, 2000, 1800, 2200)
+```
 
 **⚠️ Warning:** Trading involves risk. Only trade with money you can afford to lose.
