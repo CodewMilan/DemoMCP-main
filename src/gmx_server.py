@@ -843,6 +843,32 @@ async def get_pending_orders(chain: str = "arbitrum", address: str = None) -> st
 
 
 @mcp.tool()
+async def cancel_order(order_key: str, chain: str = "arbitrum", debug_mode: bool = True) -> str:
+    """Cancel a pending order."""
+    try:
+        if not config_data.get('private_key') or not config_data.get('user_wallet_address'):
+            return "Error: Wallet not configured. Use setup_wallet() first."
+            
+        cancel_tx = {
+            "type": "cancel_order",
+            "order_key": order_key,
+            "chain": chain,
+            "debug_mode": debug_mode,
+            "status": "created" if debug_mode else "pending",
+            "timestamp": int(time.time())
+        }
+        
+        if debug_mode:
+            cancel_tx["note"] = "Cancel order created in debug mode - not executed"
+        else:
+            cancel_tx["note"] = "Cancel transaction would be submitted to blockchain"
+            
+        return json.dumps(cancel_tx, indent=2)
+        
+    except Exception as e:
+        return f"Error canceling order: {str(e)}"
+
+@mcp.tool()
 async def help_gmx_trading() -> str:
     """Get help information about available GMX trading commands."""
     return """
