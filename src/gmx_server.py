@@ -800,6 +800,48 @@ async def remove_liquidity(
     except Exception as e:
         return f"Error removing liquidity: {str(e)}"
 
+## below are the order mangement tools
+@mcp.tool()
+async def get_pending_orders(chain: str = "arbitrum", address: str = None) -> str:
+    """Get all pending/open orders for an address."""
+    try:
+        if not address:
+            address = config_data.get('user_wallet_address')
+        if not address:
+            return "Error: No wallet address provided or configured"
+            
+        w3 = get_web3(chain)
+        contracts = gmx_contracts.get(chain, {})
+        
+        pending_orders = {
+            "chain": chain,
+            "address": address,
+            "orders": [],
+            "timestamp": int(time.time())
+        }
+        
+        # Placeholder data - in production this would query the GMX contracts
+        pending_orders["orders"] = [
+            {
+                "order_key": "0x123...",
+                "type": "limit_increase",
+                "market": "ETH/USD",
+                "side": "LONG",
+                "trigger_price": "2100.0",
+                "size_usd": "500.0",
+                "collateral_usd": "100.0",
+                "status": "pending"
+            }
+        ]
+        pending_orders["status"] = "placeholder_data"
+        pending_orders["note"] = "Query GMX OrderStore contract for real data"
+            
+        return json.dumps(pending_orders, indent=2)
+        
+    except Exception as e:
+        return f"Error getting pending orders: {str(e)}"
+
+
 @mcp.tool()
 async def help_gmx_trading() -> str:
     """Get help information about available GMX trading commands."""
